@@ -1,0 +1,21 @@
+#
+# Makefile help page
+#
+define HELP_USAGE
+	@echo Usage: make help
+endef
+
+define HELP_TARGETS
+	@echo
+	@echo Targets:
+	@grep -hE '^[a-zA-Z_\-\.]+(.%)?:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+endef
+
+define usage
+	$(HELP_USAGE)
+	$(HELP_TARGETS)
+endef
+
+help: ## Display usage information
+	$(usage)

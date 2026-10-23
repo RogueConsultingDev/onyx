@@ -1,0 +1,119 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - forbidigo
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - modernize
+    - nakedret
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - testifylint
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - zerologlint
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/rs/zerolog/log
+              desc: Use github.com/rs/zerolog instead of github.com/rs/zerolog/log
+    forbidigo:
+      forbid:
+        - pattern: ^(fmt\.Print(|f|ln)|print|println)$
+          msg: Do not commit print statements.
+    funlen:
+      lines: -1 # disables line count check
+      statements: 50
+      ignore-comments: true
+    gocyclo:
+      min-complexity: 15
+    goconst:
+      ignore-tests: true
+      ignore-map-keys: true
+    govet:
+      enable:
+        - shadow
+    nolintlint:
+      require-explanation: true
+      require-specific: false
+      allow-unused: false
+    revive:
+      confidence: 0
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+    exhaustive:
+      default-signifies-exhaustive: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - funlen
+          - gocyclo
+          - goconst
+          - gosec
+        path: _test\.go
+      - linters: # Logs emitted from testing don't need any context data, we can use zerolog/log directly
+          - depguard
+        path: testing/.*\.go
+      - linters:
+          - goconst
+        path: internal/testing/*
+      - linters:
+          - govet
+        text: 'shadow: declaration of "(err|ctx)" shadows declaration at'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofumpt
+    - golines
+    - gci
+  settings:
+    golines:
+      reformat-tags: false
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - prefix(git.mathieulemay.net/RogueConsultingDev/) # Custom section: groups all imports with the specified Prefix.
+        - localmodule # Local module sec
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0 # Maximum issues count per one linter. Set to 0 to disable (default 50)
+  max-same-issues: 0 # Maximum count of issues with the same text. Set to 0 to disable (default 3)

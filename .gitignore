@@ -1,0 +1,13 @@
+# Test Coverage
+.coverage
+
+# IDE Settings
+.idea
+.vscode
+
+# Env files
+.env
+.env.*
+
+# macOS Generated Files
+.DS_Store
