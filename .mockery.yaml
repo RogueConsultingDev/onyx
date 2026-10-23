@@ -1,0 +1,20 @@
+template: testify
+packages:
+  git.mathieulemay.net/RogueConsultingDev/onyx/internal:
+    config:
+      all: true
+      recursive: true
+
+      dir: 'internal/testing/mocks/{{trimPrefix "internal" .InterfaceDirRelative}}'
+      filename: "{{.InterfaceName}}.gen.go"
+      pkgname: "{{.SrcPackageName}}"
+      structname: Mock{{.InterfaceName}}
+  git.mathieulemay.net/RogueConsultingDev/onyx/pkg:
+    config:
+      all: true
+      recursive: true
+
+      dir: 'pkg/testing/mocks/{{trimPrefix "pkg" .InterfaceDirRelative}}'
+      filename: "{{.InterfaceName}}.gen.go"
+      pkgname: "{{.SrcPackageName}}"
+      structname: Mock{{.InterfaceName}}

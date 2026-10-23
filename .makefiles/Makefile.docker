@@ -1,0 +1,22 @@
+export DOCKER_BUILDKIT ?= 1
+
+DOCKER_CONTEXT ?= ${PROJECT_ROOT}
+DOCKER_REPO    ?= ${PROJECT_NAME}
+DOCKER_TAG     ?= dev
+
+docker.build: ## Build the docker image for this project
+	docker build \
+		--ssh default \
+		--tag "${DOCKER_REPO}:${DOCKER_TAG}" \
+		${DOCKER_CONTEXT}
+
+docker.echo.tag: ## Show the docker tag for this project's image
+	@echo ${DOCKER_REPO}:${DOCKER_TAG}
+
+docker.clean: ## Remove docker containers from the current project (`make docker.clean all=1` for all personal projects)
+	@if [ -n "$${all}" ]; then \
+		filter="label=net.mathieulemay.project=1"; \
+	else \
+		filter="label=net.mathieulemay.application=onyx"; \
+	fi; \
+	docker ps -q -a --filter "$${filter}" | xargs -r docker rm --force --volumes

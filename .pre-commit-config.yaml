@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: check-added-rej-files
+        name: check for added .rej files
+        description: prevents .rej files from failed merges from being committed
+        language: system
+        pass_filenames: false
+        entry: sh -c 'if [ $(git ls-files "*.rej" | wc -l) -gt 0 ]; then printf "\e[31m.rej files found\e[0m\n"; exit 1; fi'
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.10
+    hooks:
+      - id: prettier
+        exclude: "^(.makefiles/)"
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.15.0
+    hooks:
+      - id: golangci-lint-fmt
+      - id: golangci-lint-full
+        name: golangci-lint
+        alias: golangci-lint
+        args:
+          - "--fix"
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-mod-tidy
+      - id: no-go-testing
