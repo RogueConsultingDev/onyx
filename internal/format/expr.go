@@ -437,7 +437,13 @@ loop:
 
 	parts := make([]doc.Doc, 0, len(segments)*3)
 	for _, segment := range segments {
-		parts = append(parts, text("."), doc.FormFeedSoftLine(), segment)
+		parts = append(parts, text("."))
+
+		if segment.comment != nil {
+			parts = append(parts, plainTrailing(segment.comment), doc.BreakParent())
+		}
+
+		parts = append(parts, doc.FormFeedSoftLine(), segment.doc)
 	}
 
 	return doc.Group(head, p.links(headLinks, depth), doc.Indent(parts...))
@@ -454,26 +460,52 @@ func (p *printer) links(links []link, depth int) doc.Doc {
 
 func (p *printer) link(item link, depth int) doc.Doc {
 	if item.selector != nil {
-		return text("." + item.selector.Sel.Name)
+		comment := p.dotComment(item.selector)
+		if comment == nil {
+			return text("." + item.selector.Sel.Name)
+		}
+
+		return doc.Concat(
+			text("."), plainTrailing(comment),
+			doc.Indent(doc.HardLine()), text(item.selector.Sel.Name),
+		)
 	}
 
 	return p.callArgs(item.call, depth)
 }
 
+// plainTrailing places a comment after a space instead of an alignment cell,
+// so the continuation line is not pushed to the right of it.
+func plainTrailing(comment *ast.Comment) doc.Doc {
+	return doc.LineSuffix(text(" "), commentDoc(comment))
+}
+
+// dotComment takes the comment that follows the dot of a selector on its line.
+func (p *printer) dotComment(selector *ast.SelectorExpr) *ast.Comment {
+	return p.takeTrailing(selector.X.End(), selector.Sel.Pos())
+}
+
+type segment struct {
+	doc     doc.Doc
+	comment *ast.Comment
+}
+
 // segments groups the links after the first call by selector. The leading
 // dot of each segment is not part of the document.
-func (p *printer) segments(links []link, depth int) []doc.Doc {
+func (p *printer) segments(links []link, depth int) []segment {
 	var (
-		segments []doc.Doc
+		segments []segment
 		current  []doc.Doc
+		comment  *ast.Comment
 	)
 
 	for _, item := range links {
 		if item.selector != nil {
 			if current != nil {
-				segments = append(segments, doc.Concat(current...))
+				segments = append(segments, segment{doc.Concat(current...), comment})
 			}
 
+			comment = p.dotComment(item.selector)
 			current = []doc.Doc{text(item.selector.Sel.Name)}
 
 			continue
@@ -482,5 +514,5 @@ func (p *printer) segments(links []link, depth int) []doc.Doc {
 		current = append(current, p.callArgs(item.call, depth))
 	}
 
-	return append(segments, doc.Concat(current...))
+	return append(segments, segment{doc.Concat(current...), comment})
 }
