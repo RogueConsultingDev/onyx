@@ -53,7 +53,7 @@ func TestPrintKinds(t *testing.T) {
 			options,
 			"a // c",
 		},
-		"line suffix ignored by fits": {
+		"line suffix counted by fits": {
 			doc.Group(
 				doc.Text("aaaa"),
 				doc.LineSuffix(doc.Text(" // long comment here")),
@@ -61,7 +61,20 @@ func TestPrintKinds(t *testing.T) {
 				doc.Text("b"),
 			),
 			options,
-			"aaaa b // long comment here",
+			"aaaa // long comment here\nb",
+		},
+		"sectioned line breaks like a line": {
+			doc.Group(doc.Text("a"), doc.SectionedLine(), doc.Text("b")),
+			options,
+			"a b",
+		},
+		"sectioned line after a multi line item": {
+			doc.Concat(
+				doc.Mark(), doc.Text("a"), doc.HardLine(), doc.Text("b"),
+				doc.SectionedLine(), doc.Mark(), doc.Text("c"),
+			),
+			options,
+			"a\nb\nc",
 		},
 		"break parent forces group": {
 			doc.Group(doc.Text("a"), doc.BreakParent(), doc.Line(), doc.Text("b")),

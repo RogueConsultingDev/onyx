@@ -3,30 +3,53 @@ package format
 import (
 	"go/ast"
 	"go/token"
+	"slices"
 
 	"github.com/RogueConsultingDev/onyx/internal/doc"
 )
 
 // block prints a braced statement block.
 func (p *printer) block(node *ast.BlockStmt) doc.Doc {
+	opening := p.openingComment(node)
 	open := p.openLine(node.List)
 	body, any := p.stmtList(node.List, node.Rbrace)
 	if !any {
 		return text("{}")
 	}
 
-	return doc.Concat(text("{"), doc.Indent(open, body), doc.FormFeed(), text("}"))
+	return doc.Concat(text("{"), opening, doc.Indent(open, body), doc.FormFeed(), text("}"))
 }
 
 // stmtBlock prints a block of a statement; gofmt never collapses these.
 func (p *printer) stmtBlock(node *ast.BlockStmt) doc.Doc {
+	opening := p.openingComment(node)
 	open := p.openLine(node.List)
 	body, any := p.stmtList(node.List, node.Rbrace)
 	if !any {
 		return doc.Concat(text("{"), doc.FormFeed(), text("}"))
 	}
 
-	return doc.Concat(text("{"), doc.Indent(open, body), doc.FormFeed(), text("}"))
+	return doc.Concat(text("{"), opening, doc.Indent(open, body), doc.FormFeed(), text("}"))
+}
+
+// openingComment keeps a comment that follows the opening brace of a
+// non-empty block on the brace's line.
+func (p *printer) openingComment(node *ast.BlockStmt) doc.Doc {
+	index := slices.IndexFunc(node.List, func(stmt ast.Stmt) bool {
+		_, empty := stmt.(*ast.EmptyStmt)
+
+		return !empty
+	})
+	if index < 0 {
+		return doc.Concat()
+	}
+
+	comment := p.takeTrailing(node.Lbrace+1, node.List[index].Pos())
+	if comment == nil {
+		return doc.Concat()
+	}
+
+	return trailingDoc(comment, 1)
 }
 
 func (p *printer) stmtList(list []ast.Stmt, closing token.Pos) (doc.Doc, bool) {

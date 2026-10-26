@@ -12,6 +12,9 @@ type listItem struct {
 	doc   doc.Doc
 	blank bool
 	ff    bool
+	// after is a comment that follows the opening bracket on its line; only
+	// the first item carries one.
+	after doc.Doc
 }
 
 // listItems renders the items of a delimited list together with their
@@ -21,9 +24,19 @@ func (p *printer) listItems(
 	count int,
 	at func(int) ast.Node,
 	render func(int) doc.Doc,
-	closing token.Pos,
+	opening, closing token.Pos,
 ) (items []listItem, tail []doc.Doc, forced bool) {
 	prevLine := 0
+
+	var after doc.Doc
+
+	if count > 0 {
+		if comment := p.takeTrailing(opening+1, at(0).Pos()); comment != nil {
+			after = trailingDoc(comment, 1)
+			prevLine = p.endLine(comment.End())
+			forced = true
+		}
+	}
 
 	for index := range count {
 		node := at(index)
@@ -48,7 +61,7 @@ func (p *printer) listItems(
 
 		prevLine = p.endLine(node.End())
 
-		full := doc.Concat(append(lead, body)...)
+		full := doc.Concat(append(lead, doc.Mark(), body)...)
 
 		trailing := p.takeTrailing(node.End(), closing)
 		if trailing != nil {
@@ -58,6 +71,10 @@ func (p *printer) listItems(
 		}
 
 		items = append(items, listItem{doc: full, blank: blank})
+	}
+
+	if len(items) > 0 {
+		items[0].after = after
 	}
 
 	for _, comment := range p.takeBefore(closing) {
@@ -70,13 +87,14 @@ func (p *printer) listItems(
 
 func (p *printer) exprItems(
 	exprs []ast.Expr,
-	closing token.Pos,
+	opening, closing token.Pos,
 	depth int,
 ) ([]listItem, []doc.Doc, bool) {
 	return p.listItems(
 		len(exprs),
 		func(index int) ast.Node { return exprs[index] },
 		func(index int) doc.Doc { return p.expr(exprs[index], depth) },
+		opening,
 		closing,
 	)
 }
@@ -115,7 +133,12 @@ func (p *printer) delimited(
 		inner = doc.Group(parts...)
 	}
 
-	body := []doc.Doc{doc.FormFeedSoftLine(), inner, doc.IfBreak(text(","), text(""))}
+	body := []doc.Doc{
+		items[0].after,
+		doc.FormFeedSoftLine(),
+		inner,
+		doc.IfBreak(text(","), text("")),
+	}
 
 	outer := []doc.Doc{
 		text(open),
@@ -137,7 +160,7 @@ func separator(item listItem) doc.Doc {
 	case item.ff:
 		return doc.FormFeedLine()
 	default:
-		return doc.Line()
+		return doc.SectionedLine()
 	}
 }
 
@@ -172,7 +195,7 @@ func (p *printer) callArgs(call *ast.CallExpr, depth int) doc.Doc {
 		argDepth++
 	}
 
-	items, tail, forced := p.exprItems(call.Args, call.Rparen, argDepth)
+	items, tail, forced := p.exprItems(call.Args, call.Lparen, call.Rparen, argDepth)
 
 	if call.Ellipsis.IsValid() && len(items) > 0 {
 		last := &items[len(items)-1]
@@ -232,6 +255,7 @@ func (p *printer) composite(node *ast.CompositeLit) doc.Doc {
 		len(node.Elts),
 		func(index int) ast.Node { return node.Elts[index] },
 		func(index int) doc.Doc { return p.element(node.Elts[index], len(node.Elts) > 1, &sizes[index]) },
+		node.Lbrace,
 		node.Rbrace,
 	)
 
