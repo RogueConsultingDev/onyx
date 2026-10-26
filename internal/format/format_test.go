@@ -235,6 +235,11 @@ func TestSettings(t *testing.T) {
 			"func g(a int, b int,\n) {}\n",
 			"func g(\n\ta int,\n\tb int,\n) {}\n",
 		},
+		"magic trailing comma keeps a short slice exploded": {
+			func(*config.Settings) {},
+			"var s = []int{1, 2,}\n",
+			"var s = []int{\n\t1,\n\t2,\n}\n",
+		},
 		"magic trailing comma disabled": {
 			func(settings *config.Settings) { settings.MagicTrailingComma = false },
 			"var x = f(a, b,\n)\nvar y = []int{1,\n}\n",

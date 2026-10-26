@@ -35,12 +35,15 @@ func Source(src []byte, filename string, settings config.Settings) ([]byte, erro
 		return nil, fmt.Errorf("error parsing %s: %w", filename, err)
 	}
 
-	return File(fset, file, settings)
+	return File(fset, file, src, settings)
 }
 
-// File formats a parsed file whose comments were parsed.
-func File(fset *token.FileSet, file *ast.File, settings config.Settings) (out []byte, err error) {
-	state := &printer{fset: fset, settings: settings}
+// File formats a parsed file whose comments were parsed. The source is the
+// text the file was parsed from.
+func File(
+	fset *token.FileSet, file *ast.File, src []byte, settings config.Settings,
+) (out []byte, err error) {
+	state := &printer{fset: fset, settings: settings, src: src}
 
 	for _, group := range file.Comments {
 		state.comments = append(state.comments, group.List...)
@@ -71,6 +74,7 @@ type printer struct {
 	fset     *token.FileSet
 	settings config.Settings
 	comments []*ast.Comment
+	src      []byte
 }
 
 func (p *printer) options() doc.Options {
