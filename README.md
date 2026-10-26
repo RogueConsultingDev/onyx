@@ -6,6 +6,16 @@ onyx formats Go source deterministically: the same program always produces the
 same output, whatever the input layout looks like, with very few knobs. Its
 output is stable under `gofmt` and idempotent.
 
+## pre-commit
+
+```yaml
+repos:
+  - repo: https://github.com/RogueConsultingDev/onyx
+    rev: v0.1.0 # use the tag or commit you want to pin
+    hooks:
+      - id: onyx # formats files; use onyx-check to only verify
+```
+
 ## Usage
 
 ```shell
