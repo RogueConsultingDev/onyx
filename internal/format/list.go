@@ -2,6 +2,7 @@ package format
 
 import (
 	"go/ast"
+	"go/scanner"
 	"go/token"
 	"math"
 
@@ -173,12 +174,23 @@ func docs(items []listItem) []doc.Doc {
 	return out
 }
 
-// hasTrailingComma reports whether magic trailing commas are enabled and the
-// list ends with a comma, detected by its closing token sitting on a later
-// line than the last element.
+// hasTrailingComma reports whether magic trailing commas are enabled and a
+// comma follows the last element, even when the list is on a single line.
 func (p *printer) hasTrailingComma(last ast.Node, closing token.Pos) bool {
-	return p.settings.MagicTrailingComma && last != nil &&
-		p.line(closing) > p.endLine(last.End())
+	if !p.settings.MagicTrailingComma || last == nil {
+		return false
+	}
+
+	file := p.fset.File(last.End())
+	start, end := file.Offset(last.End()), file.Offset(closing)
+
+	var lexer scanner.Scanner
+
+	lexer.Init(p.fset.AddFile("", -1, end-start), p.src[start:end], nil, 0)
+
+	_, tok, _ := lexer.Scan()
+
+	return tok == token.COMMA
 }
 
 func lastOf[T ast.Node](nodes []T) ast.Node {

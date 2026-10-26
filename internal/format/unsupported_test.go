@@ -76,5 +76,5 @@ func TestFileRepanicsForeignPanics(t *testing.T) {
 
 	file.Name = nil
 
-	assert.Panics(t, func() { _, _ = File(fset, file, config.Defaults()) })
+	assert.Panics(t, func() { _, _ = File(fset, file, nil, config.Defaults()) })
 }
