@@ -233,11 +233,12 @@ func basicLit(node *ast.BasicLit) doc.Doc {
 	switch node.Kind {
 	case token.INT, token.FLOAT, token.IMAG:
 		value = normalizeNumber(value)
-	case token.STRING:
-		if strings.ContainsAny(value, "\n\t") {
-			return doc.Verbatim(strings.ReplaceAll(value, "\r", ""))
-		}
 	default:
+	}
+
+	// Tabs and newlines inside literals must not be seen by the tab writer.
+	if strings.ContainsAny(value, "\n\t") {
+		return doc.Verbatim(strings.ReplaceAll(value, "\r", ""))
 	}
 
 	return text(value)
