@@ -23,7 +23,10 @@ func collect(paths []string) ([]string, error) {
 		}
 
 		if !info.IsDir() {
-			files = append(files, path)
+			// Hooks pass every file explicitly, so generated files are skipped here too.
+			if !isGeneratedFile(path) {
+				files = append(files, path)
+			}
 
 			continue
 		}
