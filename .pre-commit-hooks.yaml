@@ -1,0 +1,14 @@
+- id: onyx
+  name: onyx
+  description: Format Go code with onyx.
+  entry: onyx
+  language: golang
+  types: [go]
+  require_serial: true
+- id: onyx-check
+  name: onyx (check)
+  description: Fail when Go code is not formatted with onyx, without rewriting it.
+  entry: onyx --check
+  language: golang
+  types: [go]
+  require_serial: true
