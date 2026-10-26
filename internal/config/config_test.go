@@ -157,3 +157,15 @@ func TestResolve(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestResolveWithoutUserConfigDir(t *testing.T) {
+	root := t.TempDir()
+	write(t, filepath.Join(root, "go.mod"), "module x\n")
+
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", "")
+
+	settings, err := config.Resolve(filepath.Join(root, "main.go"), "", config.Overrides{})
+	require.NoError(t, err)
+	assert.Equal(t, config.Defaults(), settings)
+}
