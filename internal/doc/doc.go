@@ -72,6 +72,10 @@ func BlankIfMulti() Doc { return Doc{kind: kindHardLine, text: blankIfMulti} }
 // anything printed since then spans several lines.
 func Mark() Doc { return Doc{kind: kindMark} }
 
+// SectionedLine is a Line that, when broken, also ends the alignment section
+// if a line break was printed since the last Mark.
+func SectionedLine() Doc { return Doc{kind: kindLine, text: sectionLine} }
+
 // SectionLine is a HardLine that also ends the alignment section if a line
 // break was printed since the last Mark.
 func SectionLine() Doc { return Doc{kind: kindHardLine, text: sectionLine} }
@@ -233,7 +237,7 @@ func (p *printer) leaf(cmd command) {
 			return
 		}
 
-		p.newline(cmd.indent, cmd.doc.kind == kindFormFeed || cmd.doc.text == "\f")
+		p.newline(cmd.indent, p.endsSection(cmd.doc))
 	case kindHardLine:
 		if cmd.doc.text == blankIfMulti {
 			if p.lines != p.marked {
@@ -251,6 +255,13 @@ func (p *printer) leaf(cmd command) {
 		p.marked = p.lines
 	default:
 	}
+}
+
+// endsSection reports whether breaking the line also ends the alignment
+// section.
+func (p *printer) endsSection(line Doc) bool {
+	return line.kind == kindFormFeed || line.text == "\f" ||
+		(line.text == sectionLine && p.lines != p.marked)
 }
 
 func (p *printer) cellFit(cmd command, stack []command) []command {
@@ -427,7 +438,7 @@ func fits(candidate command, rest []command, remaining int) bool {
 			if multiline {
 				return remaining >= 0
 			}
-		case kindConcat, kindGroup, kindIndent, kindDedent, kindCellFit:
+		case kindConcat, kindGroup, kindIndent, kindDedent, kindCellFit, kindLineSuffix:
 			if cmd.doc.kind == kindCellFit {
 				remaining--
 			}
@@ -445,7 +456,7 @@ func fits(candidate command, rest []command, remaining int) bool {
 			}
 		case kindHardLine:
 			return true
-		case kindLineSuffix, kindBreakParent, kindMark:
+		case kindBreakParent, kindMark:
 		}
 	}
 

@@ -65,6 +65,10 @@ than formatted incorrectly.
   per line.
 - Binary expressions break after the operator; method chains break after the
   dot.
+- A trailing comment counts toward the line length. When it makes a line too
+  long, the line is split and the comment ends up on the last resulting line
+  (after the `{` of a function body, for instance); an unsplittable line is
+  left as is.
 - Struct and interface types with members are always multi-line.
 - One blank line separates top-level declarations (but not consecutive
   imports); more blank lines collapse to one.

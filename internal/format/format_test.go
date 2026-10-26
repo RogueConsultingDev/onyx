@@ -24,6 +24,38 @@ func TestSource(t *testing.T) {
 			"var r = '\t'\n",
 			"var r = '\t'\n",
 		},
+		"keeps a comment after an opening brace": {
+			"func f() { // note\n\ta()\n}\n",
+			"func f() { // note\n\ta()\n}\n",
+		},
+		"splits a call whose trailing comment overflows": {
+			"var x = f(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbbbbbbb, cccccccccccccccccccccc) // note\n",
+			"var x = f(\n\taaaaaaaaaaaaaaaaaaaaaaaaaaaaa,\n\tbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,\n\tcccccccccccccccccccccc,\n) // note\n", //nolint:lll // long golden literal
+		},
+		"moves an overflowing brace comment to the last split line": {
+			"var h = func(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb int) error { // note\n\treturn nil\n}\n",        //nolint:lll // long golden literal
+			"var h = func(\n\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb int,\n) error { // note\n\treturn nil\n}\n", //nolint:lll // long golden literal
+		},
+		"leaves an unsplittable line with a long comment": {
+			"var x = 1 // a very long comment that cannot be split anywhere because there is no place to split it ok\n",
+			"var x = 1 // a very long comment that cannot be split anywhere because there is no place to split it ok\n",
+		},
+		"keeps a comment after an opening parenthesis": {
+			"func (c *C) HttpUrl( //nolint:staticcheck  // HttpUrl is readable, HTTPURL is not.\n\tctx context.Context,\n\tport uint16,\n) (string, error) {\n\treturn \"\", nil\n}\n", //nolint:lll // long golden literal
+			"func (c *C) HttpUrl( //nolint:staticcheck  // HttpUrl is readable, HTTPURL is not.\n\tctx context.Context,\n\tport uint16,\n) (string, error) {\n\treturn \"\", nil\n}\n", //nolint:lll // long golden literal
+		},
+		"keeps a comment after the opening of a call": {
+			"var x = f( // note\n\ta,\n\tb,\n)\n",
+			"var x = f( // note\n\ta,\n\tb,\n)\n",
+		},
+		"keeps a comment after the opening of a literal": {
+			"var x = T{ // note\n\tA: 1,\n}\n",
+			"var x = T{ // note\n\tA: 1,\n}\n",
+		},
+		"aligns values after a leading comment": {
+			"var x = T{\n\tA: 1,\n\t// note\n\tTimestamp: event.Timestamp,\n\tTraceID:   event.TraceID,\n}\n",
+			"var x = T{\n\tA: 1,\n\t// note\n\tTimestamp: event.Timestamp,\n\tTraceID:   event.TraceID,\n}\n",
+		},
 		"collapses blank lines": {
 			"func f() {\n\ta()\n\n\n\n\tb()\n}\n",
 			"func f() {\n\ta()\n\n\tb()\n}\n",

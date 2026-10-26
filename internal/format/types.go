@@ -7,11 +7,15 @@ import (
 	"github.com/RogueConsultingDev/onyx/internal/doc"
 )
 
-func (p *printer) fieldItems(list []*ast.Field, closing token.Pos) ([]listItem, []doc.Doc, bool) {
+func (p *printer) fieldItems(
+	list []*ast.Field,
+	opening, closing token.Pos,
+) ([]listItem, []doc.Doc, bool) {
 	return p.listItems(
 		len(list),
 		func(index int) ast.Node { return list[index] },
 		func(index int) doc.Doc { return p.param(list[index]) },
+		opening,
 		closing,
 	)
 }
@@ -25,7 +29,7 @@ func (p *printer) param(field *ast.Field) doc.Doc {
 }
 
 func (p *printer) fieldList(list *ast.FieldList, open, closeToken string) doc.Doc {
-	items, tail, forced := p.fieldItems(list.List, list.Closing)
+	items, tail, forced := p.fieldItems(list.List, list.Opening, list.Closing)
 
 	if p.hasTrailingComma(lastOf(list.List), list.Closing) {
 		forced = true
