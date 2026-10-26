@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/token"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -108,12 +109,58 @@ func dumpReference(builder *strings.Builder, value reflect.Value) {
 
 		return
 	case *ast.BasicLit:
-		fmt.Fprintf(builder, "lit(%v %s)", node.Kind, strings.ToLower(node.Value))
+		fmt.Fprintf(builder, "lit(%v %s)", node.Kind, literalText(node))
 
 		return
+	case *ast.BinaryExpr:
+		if text, ok := foldStrings(node); ok {
+			fmt.Fprintf(builder, "lit(%v %s)", token.STRING, strconv.Quote(text))
+
+			return
+		}
 	}
 
 	dump(builder, value.Elem())
+}
+
+// literalText normalizes literals: strings compare by value, so quoting style
+// does not matter, and numbers compare case-insensitively.
+func literalText(node *ast.BasicLit) string {
+	if node.Kind == token.STRING {
+		value, err := strconv.Unquote(node.Value)
+		if err == nil {
+			return strconv.Quote(value)
+		}
+	}
+
+	return strings.ToLower(node.Value)
+}
+
+// foldStrings evaluates a concatenation made only of string literals.
+func foldStrings(expr ast.Expr) (string, bool) {
+	switch node := expr.(type) {
+	case *ast.ParenExpr:
+		return foldStrings(node.X)
+	case *ast.BasicLit:
+		if node.Kind != token.STRING {
+			return "", false
+		}
+
+		value, err := strconv.Unquote(node.Value)
+
+		return value, err == nil
+	case *ast.BinaryExpr:
+		if node.Op != token.ADD {
+			return "", false
+		}
+
+		left, leftOK := foldStrings(node.X)
+		right, rightOK := foldStrings(node.Y)
+
+		return left + right, leftOK && rightOK
+	}
+
+	return "", false
 }
 
 func dumpStruct(builder *strings.Builder, value reflect.Value) {

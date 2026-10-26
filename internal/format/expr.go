@@ -4,7 +4,9 @@ import (
 	"go/ast"
 	"go/token"
 	"slices"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/RogueConsultingDev/onyx/internal/doc"
 )
@@ -360,8 +362,13 @@ func (p *printer) binary(node *ast.BinaryExpr, cutoffPrec, depth int) doc.Doc {
 		left = binary.X
 	}
 
-	first := p.expr(left, depth+1)
 	blanks := prec < cutoffPrec
+
+	if merged, ok := mergedStrings(left, links); ok {
+		return p.stringChain(left, links, merged, blanks, depth)
+	}
+
+	first := p.expr(left, depth+1)
 
 	rest := make([]doc.Doc, 0, len(links)*3)
 
@@ -380,6 +387,67 @@ func (p *printer) binary(node *ast.BinaryExpr, cutoffPrec, depth int) doc.Doc {
 	}
 
 	return doc.Group(first, doc.Indent(rest...))
+}
+
+// stringChain prints a concatenation of string literals as a single literal
+// when it fits, and one literal per line otherwise.
+func (p *printer) stringChain(
+	left ast.Expr, links []binaryLink, merged string, blanks bool, depth int,
+) doc.Doc {
+	operator := "+"
+	if blanks {
+		operator = " +"
+	}
+
+	parts := []doc.Doc{p.expr(left, depth+1)}
+
+	for _, link := range slices.Backward(links) {
+		parts = append(parts, text(operator), doc.Indent(doc.Line(), p.expr(link.y, depth+1)))
+	}
+
+	return doc.Group(doc.IfBreak(doc.Concat(parts...), text(merged)))
+}
+
+// mergedStrings returns the source of a single literal equivalent to a
+// concatenation made only of string literals.
+func mergedStrings(left ast.Expr, links []binaryLink) (string, bool) {
+	literals := []*ast.BasicLit{}
+
+	if first, ok := left.(*ast.BasicLit); ok {
+		literals = append(literals, first)
+	}
+
+	for _, link := range slices.Backward(links) {
+		if literal, ok := link.y.(*ast.BasicLit); ok {
+			literals = append(literals, literal)
+		}
+	}
+
+	if len(literals) != len(links)+1 || links[0].op != token.ADD {
+		return "", false
+	}
+
+	var values strings.Builder
+
+	cooked := true
+
+	for _, literal := range literals {
+		value, err := strconv.Unquote(literal.Value)
+		if literal.Kind != token.STRING || err != nil {
+			return "", false
+		}
+
+		values.WriteString(value)
+
+		cooked = cooked && !strings.HasPrefix(literal.Value, "`")
+	}
+
+	value := values.String()
+	if cooked || strings.ContainsAny(value, "`\r") || !utf8.ValidString(value) {
+		return strconv.Quote(value), true
+	}
+
+	return "`" + value + "`", true
 }
 
 // link is one step of a selector/call chain.

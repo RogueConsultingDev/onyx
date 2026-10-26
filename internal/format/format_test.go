@@ -56,6 +56,14 @@ func TestSource(t *testing.T) {
 			"var x = T{\n\tA: 1,\n\t// note\n\tTimestamp: event.Timestamp,\n\tTraceID:   event.TraceID,\n}\n",
 			"var x = T{\n\tA: 1,\n\t// note\n\tTimestamp: event.Timestamp,\n\tTraceID:   event.TraceID,\n}\n",
 		},
+		"merges short string concatenations": {
+			"var x = \"a\" + \"b\" + (\"c\")\nvar y = \"a\" + `b` + \"c\"\nvar z = `a` + `b\nc`\nvar w = \"a`\" + `b` + \"\\n\"\nvar v = \"a\" + 1\nvar u = a + \"b\" + \"c\"\n", //nolint:lll // long golden literal
+			"var x = \"a\" + \"b\" + (\"c\")\n\nvar y = `abc`\n\nvar z = `ab\nc`\n\nvar w = \"a`b\\n\"\n\nvar v = \"a\" + 1\n\nvar u = a + \"b\" + \"c\"\n",                      //nolint:lll // long golden literal
+		},
+		"splits long string concatenations": {
+			"var x = `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` + `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n",    //nolint:lll // long golden literal
+			"var x = `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` +\n\t`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n", //nolint:lll // long golden literal
+		},
 		"collapses blank lines": {
 			"func f() {\n\ta()\n\n\n\n\tb()\n}\n",
 			"func f() {\n\ta()\n\n\tb()\n}\n",
