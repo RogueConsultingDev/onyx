@@ -49,6 +49,10 @@ func TestEquivalent(t *testing.T) {
 			"package p\n\nvar x = (1 + 2) * 0xab\n\nfunc f() {\n\tif (x) {\n\t}\n} // done   \n",
 			true,
 		},
+		"empty result list": {
+			"package p\n\nvar x = (1 + 2) * 0xab\n\nfunc f() () {\n\t;\n\tif (x) {\n\t}\n} // done\n",
+			true,
+		},
 		"operator": {
 			"package p\n\nvar x = (1 + 2) + 0xab\n\nfunc f() {\n\tif (x) {\n\t}\n} // done\n",
 			false,

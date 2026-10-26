@@ -88,6 +88,14 @@ func dump(builder *strings.Builder, value reflect.Value) {
 }
 
 func dumpReference(builder *strings.Builder, value reflect.Value) {
+	// An empty result list prints as nothing, which parses back as absent.
+	if fields, ok := reflect.TypeAssert[*ast.FieldList](value); ok && fields != nil &&
+		len(fields.List) == 0 {
+		builder.WriteString("nil")
+
+		return
+	}
+
 	if value.IsNil() {
 		builder.WriteString("nil")
 
