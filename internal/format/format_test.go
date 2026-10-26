@@ -267,3 +267,34 @@ func TestSourceErrors(t *testing.T) {
 	require.ErrorIs(t, err, onyx.ErrUnsupported)
 	assert.ErrorContains(t, err, "comment inside an expression")
 }
+
+// gofmt indents the line after a trailing comment on a dot far to the right;
+// onyx deliberately does not.
+func TestDotComments(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct{ input, want string }{
+		"call chain": {
+			"func f() {\n\tlogEvt = logger.Error(). //nolint:zerologlint // manual\n\t\t\t\t\tErr(err)\n}\n",
+			"func f() {\n\tlogEvt = logger.Error(). //nolint:zerologlint // manual\n\t\tErr(err)\n}\n",
+		},
+		"selector": {
+			"func f() {\n\tx = a.b. //note\n\t\t\td()\n}\n",
+			"func f() {\n\tx = a.b. //note\n\t\td()\n}\n",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := onyx.Source([]byte(header+test.input), "in.go", config.Defaults())
+			require.NoError(t, err)
+			assert.Equal(t, header+test.want, string(got))
+
+			again, err := onyx.Source(got, "in.go", config.Defaults())
+			require.NoError(t, err)
+			assert.Equal(t, string(got), string(again))
+		})
+	}
+}
