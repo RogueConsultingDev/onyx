@@ -20,6 +20,10 @@ func TestSource(t *testing.T) {
 		input string
 		want  string
 	}{
+		"keeps a raw tab inside a rune literal": {
+			"var r = '\t'\n",
+			"var r = '\t'\n",
+		},
 		"collapses blank lines": {
 			"func f() {\n\ta()\n\n\n\n\tb()\n}\n",
 			"func f() {\n\ta()\n\n\tb()\n}\n",
