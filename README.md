@@ -36,7 +36,7 @@ the result to standard output.
 | `--tab-width n`                | Width of a tab when measuring lines (default 4)              |
 | `--magic-trailing-comma=false` | Do not treat a trailing comma as a request to keep exploding |
 
-Exit statuses: 0 success, 1 changes needed (with `--check`), 2 error.
+Exit statuses: 0 success, 1 error, 2 changes needed (with `--check`).
 
 ### Configuration
 

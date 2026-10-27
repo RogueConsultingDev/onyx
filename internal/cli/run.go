@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,8 +15,8 @@ import (
 // Exit statuses.
 const (
 	ExitOK      = 0
-	ExitChanges = 1
-	ExitError   = 2
+	ExitError   = 1
+	ExitChanges = 2
 )
 
 const filePermissions = 0o644
@@ -32,18 +31,7 @@ type runner struct {
 }
 
 // Run executes onyx with the given arguments and returns the exit status.
-func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	options, err := ParseArgs(args, stderr)
-	if errors.Is(err, ErrHelp) {
-		return ExitOK
-	}
-
-	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "onyx: %v\n", err)
-
-		return ExitError
-	}
-
+func Run(options Options, stdin io.Reader, stdout, stderr io.Writer) int {
 	run := &runner{options: options, stdin: stdin, stdout: stdout, stderr: stderr}
 
 	return run.execute()
