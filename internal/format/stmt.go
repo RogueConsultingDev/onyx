@@ -3,6 +3,7 @@ package format
 import (
 	"go/ast"
 	"go/token"
+	"math"
 	"slices"
 
 	"github.com/RogueConsultingDev/onyx/internal/doc"
@@ -172,7 +173,53 @@ func (p *printer) returnStmt(node *ast.ReturnStmt) doc.Doc {
 		return text("return")
 	}
 
-	return doc.Concat(text("return "), commaList(p.exprs(node.Results, 1)))
+	results := p.exprs(node.Results, 1)
+	if p.hugsLastResult(node.Results, results) {
+		return doc.Concat(text("return "), doc.Join(text(", "), results))
+	}
+
+	return doc.Concat(text("return "), commaList(results))
+}
+
+// hugsLastResult reports whether the last result is a call with arguments or
+// a non-empty typed composite literal that can stay attached to the preceding
+// single-line results.
+func (p *printer) hugsLastResult(nodes []ast.Expr, results []doc.Doc) bool {
+	if len(nodes) < 2 {
+		return false
+	}
+
+	var head ast.Expr
+
+	switch last := nodes[len(nodes)-1].(type) {
+	case *ast.CompositeLit:
+		if len(last.Elts) > 0 {
+			head = last.Type
+		}
+	case *ast.CallExpr:
+		if len(last.Args) > 0 {
+			head = last.Fun
+		}
+	}
+
+	if head == nil {
+		return false
+	}
+
+	// "return " plus the separators and the opening delimiter of the last result.
+	width := len("return ") + 2*(len(results)-1) + len("(")
+
+	for _, result := range results[:len(results)-1] {
+		if doc.HasForcedBreak(result) {
+			return false
+		}
+
+		width += len([]rune(doc.Print(result, doc.Options{LineLength: math.MaxInt32})))
+	}
+
+	width += len([]rune(doc.Print(p.expr(head, 1), doc.Options{LineLength: math.MaxInt32})))
+
+	return width <= p.settings.LineLength
 }
 
 // header prints the init statement and condition of a control clause.

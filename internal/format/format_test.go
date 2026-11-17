@@ -2,8 +2,10 @@ package format_test
 
 import (
 	"go/format"
+	"strings"
 	"testing"
 
+	dd "github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -186,6 +188,44 @@ func TestSource(t *testing.T) {
 			"func f() {\n\tx++\n\tc <- 1\n\tgo g()\n\tdefer h()\n\tvar a, b = 1, 2\n\ta, b = b, a\n\tfor range c {\n\t}\n\tfor k, v := range m {\n\t\t_, _ = k, v\n\t}\n\tgoto L\n\tfunc() {}()\n\ttype T int\n}\n",     //nolint:lll // long golden literal
 			"func f() {\n\tx++\n\tc <- 1\n\tgo g()\n\tdefer h()\n\tvar a, b = 1, 2\n\ta, b = b, a\n\tfor range c {\n\t}\n\n\tfor k, v := range m {\n\t\t_, _ = k, v\n\t}\n\n\tgoto L\n\tfunc() {}()\n\ttype T int\n}\n", //nolint:lll // long golden literal
 		},
+		"return with multiline earlier result": {
+			"func f() {\n\treturn func() {\n\t\tg()\n\t}, T{A: 1}\n}\n",
+			"func f() {\n\treturn func() {\n\t\t\tg()\n\t\t},\n\t\tT{A: 1}\n}\n",
+		},
+		"long return with error": {
+			dedent(`
+			func Foo() (int, error) {
+				return nil,
+					fmt.Errorf(
+						"decompressed data exceeds maximum allowed size of %d bytes",
+						420,
+					)
+			}
+			`),
+			dedent(`
+			func Foo() (int, error) {
+				return nil, fmt.Errorf(
+					"decompressed data exceeds maximum allowed size of %d bytes",
+					420,
+				)
+			}
+			`),
+		},
+		"long return with struct": {
+			dedent(`
+			func Foo() (string, Person) {
+				return "hdfjkhgjfhgkjfhgkjhdkjgkjfdhgjkfhdkhdfjkhgjfhgkjfhgkjhdkjgkjfdhgjkfhdk", Person{Name: "John", Age:  30}
+			}
+			`),
+			dedent(`
+			func Foo() (string, Person) {
+				return "hdfjkhgjfhgkjfhgkjhdkjgkjfdhgjkfhdkhdfjkhgjfhgkjfhgkjhdkjgkjfdhgjkfhdk", Person{
+					Name: "John",
+					Age:  30,
+				}
+			}
+			`),
+		},
 	}
 
 	for name, test := range tests {
@@ -310,4 +350,8 @@ func TestDotComments(t *testing.T) {
 			assert.Equal(t, string(got), string(again))
 		})
 	}
+}
+
+func dedent(s string) string {
+	return strings.TrimLeft(dd.Dedent(s), "\n")
 }
